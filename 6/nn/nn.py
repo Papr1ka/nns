@@ -44,7 +44,6 @@ class NN:
         Обратное распространение сети, не меняет веса
         """
         current_error = error
-
         # Для последнего слоя ошибку получаем в error_function
         for layer in self.layers[::-1]:
             current_error = layer.backward(current_error)
