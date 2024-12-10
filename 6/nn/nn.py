@@ -37,7 +37,6 @@ class NN:
         current_x = x
         for layer in self.layers:
             current_x = layer.forward(current_x)
-
         return current_x
 
     def backward(self, error: Nums) -> Nums:
@@ -49,7 +48,6 @@ class NN:
         # Для последнего слоя ошибку получаем в error_function
         for layer in self.layers[::-1]:
             current_error = layer.backward(current_error)
-
         return current_error
 
     def update(self, learning_rate):
@@ -85,7 +83,6 @@ class NN:
             batch_losses = []  # Loss-ы одного батча
 
             for x, y in zip(batch_xs, batch_ys):
-                x = x[None, ...]  # Для правильных размерностей (1, n), а не (n,)
                 predict = self.forward(x)[0]
                 error = predict - y
 
