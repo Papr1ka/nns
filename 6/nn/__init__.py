@@ -1,6 +1,6 @@
 from .base import Nums, NumsToNums, NumsNumsToNums
-from .layer import Layer
+from .layers import *
 from .nn import NN
 from .optimizers import *
-from .functions import *
+from .functional import *
 from .utils import *

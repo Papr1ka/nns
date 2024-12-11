@@ -3,7 +3,7 @@ from math import ceil
 
 from .base import Nums, NumsNumsToNums
 from .base import np
-from .layer import Layer
+from .layers import FunctionalNode, Learnable
 from .optimizers import OptimizerBase
 
 
@@ -14,10 +14,10 @@ class NN:
 
     def __init__(
         self,
-        layers: list[Layer],
+        nodes: list[FunctionalNode],
         loss_function: NumsNumsToNums,
     ) -> None:
-        self.layers = layers
+        self.nodes = nodes
         self.loss_function = loss_function  # Функция потерь
 
         # История значения loss_function, после train
@@ -35,7 +35,7 @@ class NN:
         Прямое распространение сети
         """
         current_x = x
-        for layer in self.layers:
+        for layer in self.nodes:
             current_x = layer.forward(current_x)
         return current_x
 
@@ -45,33 +45,32 @@ class NN:
         """
         current_error = error
         # Для последнего слоя ошибку получаем в error_function
-        for layer in self.layers[::-1]:
+        for layer in self.nodes[::-1]:
             current_error = layer.backward(current_error)
         return current_error
 
-    def update(self, learning_rate):
-        """
-        Модификация весов сети, все ошибки сохраняются в слои,
-        стоит лишь вызвать данную функцию после однократного
-        или серии применений (при batch) backward
-        """
-        for layer in self.layers[::-1]:
-            layer.update(learning_rate)
+    def get_learnables(self):
+        params = []
+        for node in self.nodes:
+            if isinstance(node, Learnable):
+                params.append(node.get_learnables())
+        return params
+
+    def initialize_weights(self, initialize_function):
+        for node in self.nodes:
+            if isinstance(node, Learnable):
+                initialize_function(node)
 
     def train(
         self,
         xs: Nums,
         ys: Nums,
-        optimizer_factory: Callable[[], OptimizerBase],
-        learning_rate: float = 0.001,
+        optimizer: OptimizerBase,
         batch_size: int = 10,
     ):
         """
         Обучение сети в рамках одной эпохи
         """
-        for layer in self.layers:
-            layer.set_optimizer(optimizer_factory())
-
         # Цикл по батчам, размера batch_size
         for batch_index in range(ceil(len(xs) / batch_size)):
             current_batch_slice = slice(
@@ -82,7 +81,7 @@ class NN:
             batch_losses = []  # Loss-ы одного батча
 
             for x, y in zip(batch_xs, batch_ys):
-                predict = self.forward(x)[0]
+                predict = self.forward(x)
                 error = predict - y
 
                 # Считаем ошибку
@@ -93,7 +92,7 @@ class NN:
                 batch_losses.append(E)
 
             # Обновляем веса
-            self.update(learning_rate=learning_rate)
+            optimizer.step()
 
             # Собираем статистику
             batch_loss = np.sum(batch_losses)
